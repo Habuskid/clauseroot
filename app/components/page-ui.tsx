@@ -1,0 +1,3 @@
+import React from "react";
+export function Page({ title, kicker, intro, children }: { title: string; kicker: string; intro: string; children: React.ReactNode }) { return <><div className="page-heading"><p className="eyebrow">{kicker}</p><h1>{title}</h1><p className="lede">{intro}</p></div>{children}<footer><span>ClauseRoot v0.1</span><span>State over spectacle.</span><span>GenLayer localnet / chain 61999</span></footer></>; }
+export function PanelTitle({ label, title, note }: { label: string; title: string; note?: string }) { return <div className="panel-title"><div><span className="section-label">{label}</span><h2>{title}</h2></div>{note && <span className="panel-note">{note}</span>}</div>; }

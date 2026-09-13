@@ -1,0 +1,3 @@
+import Link from "next/link";
+import { Page, PanelTitle } from "../components/page-ui";
+export default function ActivityPage() { return <Page title="Activity" kicker="AUDIT TRAIL / ON-CHAIN EVIDENCE" intro="Proposal history will be read from contract state. No local database or placeholder transactions are used."><section className="panel"><PanelTitle label="HISTORY" title="Proposal history" note="ON-CHAIN RECORDS"/><div className="empty-state"><span>◇</span><strong>No proposals found</strong><p>Connect a deployed proposal contract after the Governor core is wired. Real transaction hashes and validator decisions will appear here.</p><Link className="outline-button" href="/settings">Open deployment settings ↗</Link></div></section></Page>; }

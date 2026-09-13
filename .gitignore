@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.next/
+artifacts/
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+.genlayer/
+node_modules/
+dist/
+build/
+
+# Keep internal planning documents local. README.md is the only Markdown file published.
+*.md
+!README.md
