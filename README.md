@@ -165,7 +165,7 @@ clauseroot/
 │   ├── activity/                On-chain proposal activity screen
 │   ├── components/              Navigation, wallet, and shared UI
 │   ├── proposal/                Proposal preparation screen
-│   └── settings/                GenLayer localnet information
+│   └── settings/                GenLayer Bradbury testnet information
 ├── contracts/
 │   ├── governed_protocol_v1.py  Initial upgradeable target
 │   ├── governed_protocol_v2.py  Compatible upgraded target
@@ -204,7 +204,7 @@ Implemented and tested:
 - a multi-page Next.js interface;
 - GenLayerJS public contract reads;
 - browser-wallet connection through an EIP-1193 provider; and
-- localnet network switching through GenLayerJS;
+- Bradbury Testnet network switching through GenLayerJS;
 - deterministic validation of version, payload size, pinned runner and commit-pinned source URLs;
 - a production Governor with independently repeated constitutional evaluation;
 - normalized `APPROVE` or `REJECT` decisions and stable violation codes;
@@ -220,7 +220,7 @@ The production Governor and UI path are implemented, while the repository's repe
 
 - Node.js 20 or newer
 - Python 3.12
-- a running GenLayer localnet/GenLayer Studio RPC at `http://127.0.0.1:4000/api`
+- access to the public GenLayer Bradbury RPC at `https://rpc-bradbury.genlayer.com`
 - an EIP-1193-compatible browser wallet for signed transactions
 
 ### Install frontend dependencies
@@ -244,17 +244,18 @@ Available pages:
 | `/` | Verify a live Governor/target pair and read target state |
 | `/proposal` | Prepare and review proposed source |
 | `/activity` | Display real on-chain proposal history when available |
-| `/settings` | Inspect localnet and wallet configuration |
+| `/settings` | Inspect Bradbury Testnet and wallet configuration |
 
-### Configure the wallet for localnet
+### Configure the wallet for Bradbury Testnet
 
 | Setting | Value |
 | --- | --- |
-| RPC URL | `http://127.0.0.1:4000/api` |
-| Chain ID | `61127` |
+| RPC URL | `https://rpc-bradbury.genlayer.com` |
+| Chain ID | `4221` |
+| Explorer | `https://explorer-bradbury.genlayer.com/` |
 | Currency symbol | `GEN` |
 
-The Connect Wallet button asks the wallet for account access and requests a switch to GenLayer localnet. ClauseRoot never reads or stores the wallet's private key.
+The Connect Wallet button asks the wallet for account access and requests a switch to GenLayer Bradbury Testnet. ClauseRoot never reads or stores the wallet's private key.
 
 ## Run the tests
 
@@ -291,7 +292,7 @@ The integration test deploys real local contracts, transfers upgrade authority, 
 
 ## Using the web application
 
-1. Start GenLayer localnet and the ClauseRoot web application.
+1. Start the ClauseRoot web application and connect a wallet configured for Bradbury Testnet.
 2. Deploy the target V1 contract.
 3. Deploy the Governor with the target address.
 4. Finalize target governance so the Governor becomes the authorized upgrader.
@@ -299,7 +300,7 @@ The integration test deploys real local contracts, transfers upgrade authority, 
 6. Enter the real Governor and target addresses.
 7. Select **Load live state**.
 8. ClauseRoot reads the Governor's target address and rejects a mismatched pair.
-9. If the pair matches, ClauseRoot reads target storage and governance state directly from localnet.
+9. If the pair matches, ClauseRoot reads target storage and governance state directly from Bradbury Testnet.
 10. Connect a wallet when a signed transaction is required.
 
 No addresses, transaction hashes, validator decisions, or proposal records are pre-populated. Every displayed chain record must come from the configured live network.

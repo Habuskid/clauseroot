@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { createClient } from "genlayer-js";
-import { localnet } from "genlayer-js/chains";
+import { GENLAYER_CHAIN, GENLAYER_NETWORK } from "../../lib/genlayer";
 
 export type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -20,7 +20,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   async function connect() {
     setError(""); if (!window.ethereum) { setError("Install a browser wallet with an EIP-1193 provider first."); return; }
     setBusy(true);
-    try { const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[]; const next = accounts[0] ?? ""; if (!next) throw new Error("The wallet returned no account."); const client = createClient({ chain: localnet, account: next as `0x${string}`, provider: window.ethereum }); await client.connect("localnet"); setProvider(window.ethereum); setAddress(next); }
+    try { const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[]; const next = accounts[0] ?? ""; if (!next) throw new Error("The wallet returned no account."); const client = createClient({ chain: GENLAYER_CHAIN, account: next as `0x${string}`, provider: window.ethereum }); await client.connect(GENLAYER_NETWORK); setProvider(window.ethereum); setAddress(next); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Wallet connection failed."); } finally { setBusy(false); }
   }
   useEffect(() => { const handler = (...args: unknown[]) => { const accounts = args[0] as string[]; setAddress(accounts?.[0] ?? ""); }; window.ethereum?.on?.("accountsChanged", handler); return () => window.ethereum?.removeListener?.("accountsChanged", handler); }, []);

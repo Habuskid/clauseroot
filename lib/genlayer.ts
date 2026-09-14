@@ -1,10 +1,13 @@
 import { createClient } from "genlayer-js";
-import { localnet } from "genlayer-js/chains";
+import { testnetBradbury } from "genlayer-js/chains";
 
-export const LOCALNET_CHAIN_ID_DECIMAL = localnet.id;
-export const LOCALNET_CHAIN_ID = `0x${localnet.id.toString(16)}`;
-export const LOCALNET_RPC_URL = localnet.rpcUrls.default.http[0];
-export const readClient = createClient({ chain: localnet });
+export const GENLAYER_CHAIN = testnetBradbury;
+export const GENLAYER_NETWORK = "testnetBradbury" as const;
+export const GENLAYER_NETWORK_LABEL = "TESTNET BRADBURY";
+export const GENLAYER_CHAIN_ID_DECIMAL = testnetBradbury.id;
+export const GENLAYER_RPC_URL = testnetBradbury.rpcUrls.default.http[0];
+export const GENLAYER_EXPLORER_URL = "https://explorer-bradbury.genlayer.com/";
+export const readClient = createClient({ chain: GENLAYER_CHAIN });
 export const addressPattern = /^0x[0-9a-fA-F]{40}$/;
 export function isContractAddress(value: string): boolean { return addressPattern.test(value.trim()); }
 export function shortenAddress(value: string): string { return value.length > 12 ? `${value.slice(0, 6)}…${value.slice(-4)}` : value; }

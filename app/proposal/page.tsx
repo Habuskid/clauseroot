@@ -2,11 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import { createClient } from "genlayer-js";
-import { localnet } from "genlayer-js/chains";
 import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
 import { Page, PanelTitle } from "../components/page-ui";
 import { useWallet } from "../components/wallet-button";
-import { isContractAddress, readClient } from "../../lib/genlayer";
+import { GENLAYER_CHAIN, GENLAYER_NETWORK, isContractAddress, readClient } from "../../lib/genlayer";
 
 type Lifecycle = "IDLE" | "SIGNING" | "SUBMITTED" | "FINALIZING" | "FINALIZED" | "FAILED";
 type ProposalRecord = { id: string; version: string; source_url: string; decision: string; violations: string; proposer: string; executed: boolean };
@@ -22,8 +21,8 @@ export default function ProposalPage() {
     if (!address || !provider) { await connect(); setNotice("Wallet connected. Review the proposal and submit again to sign it."); return; }
     setStage("SIGNING");
     try {
-      const writeClient = createClient({ chain: localnet, account: address as `0x${string}`, provider });
-      await writeClient.connect("localnet");
+      const writeClient = createClient({ chain: GENLAYER_CHAIN, account: address as `0x${string}`, provider });
+      await writeClient.connect(GENLAYER_NETWORK);
       const hash = await writeClient.writeContract({ address: governor as `0x${string}`, functionName: "propose_upgrade", args: [version, sourceUrl, new TextEncoder().encode(source)], value: BigInt(0) });
       setTxId(hash); setStage("SUBMITTED"); setStage("FINALIZING");
       const receipt = await readClient.waitForTransactionReceipt({ hash, status: TransactionStatus.FINALIZED, interval: 3000, retries: 100 });
