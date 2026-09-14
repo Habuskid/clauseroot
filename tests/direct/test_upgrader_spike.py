@@ -9,9 +9,7 @@ def test_bootstrap_authority_is_replaced(
     target = direct_deploy("contracts/governed_protocol_v1.py", "persisted")
 
     direct_vm.sender = direct_owner
-    from genlayer.py.types import Address
-
-    target.finalize_governance(Address(direct_alice).as_hex)
+    target.finalize_governance(direct_alice)
 
     assert target.is_governance_finalized() is True
 

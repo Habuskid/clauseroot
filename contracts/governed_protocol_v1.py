@@ -42,8 +42,8 @@ class GovernedProtocol(gl.Contract):
         self.value = new_value
 
     @gl.public.write
-    def finalize_governance(self, governor: str) -> None:
-        governor_address = Address(governor)
+    def finalize_governance(self, governor: Address) -> None:
+        governor_address = governor if isinstance(governor, Address) else Address(governor)
         if self.governance_finalized:
             raise gl.UserError("Governance is already finalized")
         if gl.message.sender_address != self.bootstrap_upgrader:

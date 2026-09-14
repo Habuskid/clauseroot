@@ -36,8 +36,8 @@ class ClauseRootGovernor(gl.Contract):
     proposal_executed: TreeMap[u256, bool]
     used_sources: TreeMap[str, bool]
 
-    def __init__(self, target: str):
-        self.target = Address(target)
+    def __init__(self, target: Address):
+        self.target = target if isinstance(target, Address) else Address(target)
         self.constitution_version = "1"
         self.proposal_counter = u256(0)
 

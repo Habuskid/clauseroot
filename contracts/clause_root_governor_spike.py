@@ -14,8 +14,8 @@ class ClauseRootGovernor(gl.Contract):
     target: Address
     controller: Address
 
-    def __init__(self, target: str):
-        self.target = Address(target)
+    def __init__(self, target: Address):
+        self.target = target if isinstance(target, Address) else Address(target)
         self.controller = gl.message.sender_address
 
     @gl.public.view
