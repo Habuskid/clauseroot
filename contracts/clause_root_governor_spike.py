@@ -14,7 +14,7 @@ class ClauseRootGovernor(gl.Contract):
     target: Address
     controller: Address
 
-    def __init__(self, target: bytes):
+    def __init__(self, target: str):
         self.target = Address(target)
         self.controller = gl.message.sender_address
 

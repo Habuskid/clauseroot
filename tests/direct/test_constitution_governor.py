@@ -20,7 +20,7 @@ SOURCE_URL = (
 
 def deploy_governor(direct_deploy, direct_alice):
     return direct_deploy(
-        "contracts/clause_root_governor.py", bytes(direct_alice)
+        "contracts/clause_root_governor.py", "0x" + direct_alice.hex()
     )
 
 

@@ -21,12 +21,12 @@ def test_governor_upgrades_target_after_finalized_message_and_preserves_state():
     governor = get_contract_factory(
         contract_file_path=CONTRACTS / "clause_root_governor_spike.py"
     ).deploy(
-        args=[bytes.fromhex(target.address[2:])],
+        args=[target.address],
         wait_transaction_status=TransactionStatus.FINALIZED,
     )
 
     handoff = target.finalize_governance(
-        args=[bytes.fromhex(governor.address[2:])]
+        args=[governor.address]
     ).transact(
         wait_transaction_status=TransactionStatus.FINALIZED
     )
