@@ -25,6 +25,6 @@ class ClauseRootGovernor(gl.Contract):
     @gl.public.write
     def upgrade_target(self, new_code: bytes) -> None:
         if gl.message.sender_address != self.controller:
-            raise gl.UserError("Only the spike controller can trigger the fixture")
+            raise gl.vm.UserError("Only the spike controller can trigger the fixture")
         target = gl.get_contract_at(self.target)
         target.emit(on="finalized").upgrade(new_code)

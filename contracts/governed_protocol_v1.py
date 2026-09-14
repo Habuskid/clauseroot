@@ -45,15 +45,15 @@ class GovernedProtocol(gl.Contract):
     def finalize_governance(self, governor: Address) -> None:
         governor_address = governor if isinstance(governor, Address) else Address(governor)
         if self.governance_finalized:
-            raise gl.UserError("Governance is already finalized")
+            raise gl.vm.UserError("Governance is already finalized")
         if gl.message.sender_address != self.bootstrap_upgrader:
-            raise gl.UserError("Only the bootstrap upgrader can finalize governance")
+            raise gl.vm.UserError("Only the bootstrap upgrader can finalize governance")
 
         root = gl.storage.Root.get()
         upgraders = root.upgraders.get()
         # Bootstrap is the only upgrader before this one-time handoff.
         if len(upgraders) != 1 or upgraders[0] != self.bootstrap_upgrader:
-            raise gl.UserError("Unexpected bootstrap upgrader state")
+            raise gl.vm.UserError("Unexpected bootstrap upgrader state")
         upgraders.truncate()
         upgraders.append(governor_address)
         self.governance_finalized = True
