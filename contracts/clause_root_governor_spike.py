@@ -4,12 +4,19 @@ from genlayer import *
 
 
 class ClauseRootGovernor(gl.Contract):
-    """LLM-free governor used to prove finalized internal upgrade messages."""
+    """Test-only authority spike used to prove finalized internal messages.
+
+    Production deployments must use clause_root_governor.py. The controller
+    guard prevents arbitrary callers from turning this isolated fixture into
+    a public upgrade relay.
+    """
 
     target: Address
+    controller: Address
 
     def __init__(self, target: bytes):
         self.target = Address(target)
+        self.controller = gl.message.sender_address
 
     @gl.public.view
     def get_target(self) -> Address:
@@ -17,5 +24,7 @@ class ClauseRootGovernor(gl.Contract):
 
     @gl.public.write
     def upgrade_target(self, new_code: bytes) -> None:
+        if gl.message.sender_address != self.controller:
+            raise gl.UserError("Only the spike controller can trigger the fixture")
         target = gl.get_contract_at(self.target)
         target.emit(on="finalized").upgrade(new_code)

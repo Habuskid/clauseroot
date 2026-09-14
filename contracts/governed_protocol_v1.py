@@ -26,6 +26,14 @@ class GovernedProtocol(gl.Contract):
         return self.value
 
     @gl.public.view
+    def get_version(self) -> str:
+        return "1.0"
+
+    @gl.public.view
+    def get_fee_bps(self) -> u256:
+        return u256(100)
+
+    @gl.public.view
     def is_governance_finalized(self) -> bool:
         return self.governance_finalized
 

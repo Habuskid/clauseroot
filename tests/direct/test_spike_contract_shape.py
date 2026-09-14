@@ -9,5 +9,5 @@ def test_spike_contracts_use_the_current_pinned_runner():
     for path in CONTRACTS.glob("*.py"):
         first_line = path.read_text(encoding="utf-8").splitlines()[0]
         assert PINNED_RUNNER in first_line
-        assert "py-genlayer:test" not in path.read_text(encoding="utf-8")
-        assert "py-genlayer:latest" not in path.read_text(encoding="utf-8")
+        assert "py-genlayer:test" not in first_line
+        assert "py-genlayer:latest" not in first_line

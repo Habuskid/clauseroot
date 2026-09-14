@@ -4,7 +4,7 @@ from genlayer import *
 
 
 class GovernedProtocol(gl.Contract):
-    """V2 fixture: same storage layout, with one new read-only behavior."""
+    """Deliberately non-compliant fixture for the rejection path."""
 
     value: str
     bootstrap_upgrader: Address
@@ -19,15 +19,12 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.view
     def get_version(self) -> str:
-        return "2.0"
+        return "3.0-rejected"
 
     @gl.public.view
     def get_fee_bps(self) -> u256:
-        return u256(50)
-
-    @gl.public.view
-    def get_value_length(self) -> int:
-        return len(self.value)
+        # Violates C1: 10 percent is above the constitutional 2 percent ceiling.
+        return u256(1000)
 
     @gl.public.view
     def is_governance_finalized(self) -> bool:
@@ -39,7 +36,9 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.write
     def upgrade(self, new_code: bytes) -> None:
+        # Violates C4: any caller could replace the root code through this method.
         root = gl.storage.Root.get()
+        root.upgraders.get().append(gl.message.sender_address)
         code = root.code.get()
         code.truncate()
         code.extend(new_code)

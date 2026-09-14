@@ -204,9 +204,15 @@ Implemented and tested:
 - a multi-page Next.js interface;
 - GenLayerJS public contract reads;
 - browser-wallet connection through an EIP-1193 provider; and
-- localnet network switching through GenLayerJS.
+- localnet network switching through GenLayerJS;
+- deterministic validation of version, payload size, pinned runner and commit-pinned source URLs;
+- a production Governor with independently repeated constitutional evaluation;
+- normalized `APPROVE` or `REJECT` decisions and stable violation codes;
+- one-shot scheduling of approved upgrades with no public direct-upgrade bypass;
+- wallet-signed proposal submission and finalized execution-result checks; and
+- live proposal history reads from Governor state.
 
-The full consensus-based proposal Governor is not implemented yet. The proposal button therefore does not fabricate a transaction or decision. See [Limitations and remaining work](#limitations-and-remaining-work).
+The production Governor and UI path are implemented, while the repository's repeatable integration test still covers the lower-level finalized upgrade spike. A real-provider approved/rejected consensus run remains required before calling the complete golden path verified. See [Limitations and remaining work](#limitations-and-remaining-work).
 
 ## Run locally
 
@@ -245,7 +251,7 @@ Available pages:
 | Setting | Value |
 | --- | --- |
 | RPC URL | `http://127.0.0.1:4000/api` |
-| Chain ID | `61999` |
+| Chain ID | `61127` |
 | Currency symbol | `GEN` |
 
 The Connect Wallet button asks the wallet for account access and requests a switch to GenLayer localnet. ClauseRoot never reads or stores the wallet's private key.
@@ -338,22 +344,18 @@ Public reads do not require wallet access. Signed writes use the provider suppli
 
 ## Limitations and remaining work
 
-The current Governor is an authority-path spike. It proves that a finalized Governor message can upgrade the target while preserving storage, but it does not yet perform validator-based constitutional review.
+The repository includes both a test-only authority spike and the production consensus Governor. The spike proves finalized cross-contract upgrading and storage preservation; the production Governor adds proposal guards, immutable-source matching, independent semantic evaluation, verdict storage, and approval-only execution.
 
 Before ClauseRoot can be called complete, the following must be implemented and verified on a real GenLayer network:
 
-- deterministic proposal validation;
-- commit-pinned source evidence validation;
-- independent substantive validator evaluation of C1-C4;
-- structured `APPROVE` or `REJECT` consensus output;
-- stable violation-code storage;
-- approved proposal execution exactly once;
-- rejected proposal proving that target code cannot change;
-- live proposal and transaction lifecycle reads in the web application;
-- wallet-signed proposal submission; and
+- a real-provider integration test that proves a compliant V2 reaches consensus and upgrades;
+- a real-provider integration test that proves the malicious V3 is rejected and creates no child upgrade;
+- full semantic `genvm-lint check` completion in an environment where the pinned SDK runtime download succeeds;
+- fee estimation/profile support for fee-charging hosted deployments;
+- durable UI recovery from a saved transaction ID after refresh; and
 - repeated browser-level tests of approved and rejected upgrades.
 
-Until those items are complete, ClauseRoot should be described as a working upgrade-authority and storage-persistence proof, not a finished constitutional governor or production security system.
+Until those items are complete, ClauseRoot should be described as an implemented constitutional-governor MVP whose real-provider consensus golden path is awaiting final integration verification, not a production security system.
 
 ## License
 
