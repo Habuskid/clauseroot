@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppShell } from "./components/app-shell";
+import { SiteFrame } from "./components/site-frame";
+import { WalletProvider } from "./components/wallet-button";
 
 export const metadata: Metadata = {
   title: "ClauseRoot Protocol Console",
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><AppShell>{children}</AppShell></body></html>;
+  return <html lang="en"><body><WalletProvider><SiteFrame>{children}</SiteFrame></WalletProvider></body></html>;
 }

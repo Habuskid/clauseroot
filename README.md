@@ -241,7 +241,8 @@ Available pages:
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Verify a live Governor/target pair and read target state |
+| `/` | Public product landing page |
+| `/dashboard` | Verify a live Governor/target pair and read target state |
 | `/proposal` | Prepare and review proposed source |
 | `/activity` | Display real on-chain proposal history when available |
 | `/settings` | Inspect Bradbury Testnet and wallet configuration |
