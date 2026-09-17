@@ -1,11 +1,10 @@
-# { "Depends": "py-genlayer:9b8kjyda2ycxyq4ea6g4yfpnydxhd52gqba5rb8dw7krkh5mn9p0" }
+# v0.3.0
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 
-from genlayer import *
+import genlayer as gl
+from genlayer.types import *
 
-
-class GovernedProtocol(gl.Contract):
-    """V2 fixture: same storage layout, with one new read-only behavior."""
-
+class GovernedProtocol(gl.contract.Contract):
     value: str
     bootstrap_upgrader: Address
     governance_finalized: bool
@@ -23,7 +22,7 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.view
     def get_fee_bps(self) -> u256:
-        return u256(50)
+        return 50
 
     @gl.public.view
     def get_value_length(self) -> int:
@@ -40,8 +39,12 @@ class GovernedProtocol(gl.Contract):
     @gl.public.write
     def upgrade(self, new_code: bytes) -> None:
         root = gl.storage.Root.get()
+
         if gl.message.sender_address not in root.upgraders.get():
-            raise gl.vm.UserError("Only a governed root upgrader can replace code")
+            raise gl.vm.UserError(
+                "Only a governed root upgrader can replace code"
+            )
+
         code = root.code.get()
         code.truncate()
-        code.extend(new_code)
+        code.assign(new_code)
