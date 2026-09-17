@@ -1,14 +1,10 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# v0.3.0
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 
-from genlayer import *
+import genlayer as gl
+from genlayer.types import *
 
-
-class GovernedProtocol(gl.Contract):
-    """Minimal upgrade target for the ClauseRoot authority spike.
-
-    The storage layout is intentionally tiny and must remain unchanged in v2.
-    """
-
+class GovernedProtocol(gl.contract.Contract):
     value: str
     bootstrap_upgrader: Address
     governance_finalized: bool
@@ -31,7 +27,7 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.view
     def get_fee_bps(self) -> u256:
-        return u256(100)
+        return 100
 
     @gl.public.view
     def is_governance_finalized(self) -> bool:
@@ -43,24 +39,30 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.write
     def finalize_governance(self, governor: Address) -> None:
-        governor_address = governor if isinstance(governor, Address) else Address(governor)
         if self.governance_finalized:
             raise gl.vm.UserError("Governance is already finalized")
+
         if gl.message.sender_address != self.bootstrap_upgrader:
             raise gl.vm.UserError("Only the bootstrap upgrader can finalize governance")
 
         root = gl.storage.Root.get()
         upgraders = root.upgraders.get()
-        # Bootstrap is the only upgrader before this one-time handoff.
+
         if len(upgraders) != 1 or upgraders[0] != self.bootstrap_upgrader:
             raise gl.vm.UserError("Unexpected bootstrap upgrader state")
+
         upgraders.truncate()
-        upgraders.append(governor_address)
+        upgraders.append(governor)
+
         self.governance_finalized = True
 
     @gl.public.write
     def upgrade(self, new_code: bytes) -> None:
         root = gl.storage.Root.get()
+
+        if gl.message.sender_address not in root.upgraders.get():
+            raise gl.vm.UserError("Only an authorized root upgrader can replace code")
+
         code = root.code.get()
         code.truncate()
-        code.extend(new_code)
+        code.assign(new_code)

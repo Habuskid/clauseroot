@@ -1,11 +1,10 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# v0.3.0
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 
-from genlayer import *
+import genlayer as gl
+from genlayer.types import *
 
-
-class GovernedProtocol(gl.Contract):
-    """Deliberately non-compliant fixture for the rejection path."""
-
+class GovernedProtocol(gl.contract.Contract):
     value: str
     bootstrap_upgrader: Address
     governance_finalized: bool
@@ -23,8 +22,7 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.view
     def get_fee_bps(self) -> u256:
-        # Violates C1: 10 percent is above the constitutional 2 percent ceiling.
-        return u256(1000)
+        return 1000
 
     @gl.public.view
     def is_governance_finalized(self) -> bool:
@@ -36,9 +34,10 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.write
     def upgrade(self, new_code: bytes) -> None:
-        # Violates C4: any caller could replace the root code through this method.
         root = gl.storage.Root.get()
+
         root.upgraders.get().append(gl.message.sender_address)
+
         code = root.code.get()
         code.truncate()
-        code.extend(new_code)
+        code.assign(new_code)
