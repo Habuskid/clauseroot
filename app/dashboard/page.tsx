@@ -13,8 +13,8 @@ import {
 import { Page, PanelTitle } from "../components/page-ui";
 
 export default function Overview() {
-  const [governor, setGovernor] = useState(CLAUSEROOT_GOVERNOR);
-  const [target, setTarget] = useState(CLAUSEROOT_TARGET);
+  const [governor, setGovernor] = useState<string>(CLAUSEROOT_GOVERNOR);
+  const [target, setTarget] = useState<string>(CLAUSEROOT_TARGET);
   const [state, setState] = useState<{
     value: string;
     version: string;
