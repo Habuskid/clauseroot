@@ -1,9 +1,10 @@
 import { createClient } from "genlayer-js";
 import { studioDevnet } from "genlayer-js/chains";
 
-const DEFAULT_RPC_URL = "https://studio-next.genlayer.com/api";
+const CANONICAL_STUDIO_DEV_RPC = "https://studio-dev.genlayer.com/api";
+const STUDIO_NEXT_ALIAS_RPC = "https://studio-next.genlayer.com/api";
 const DEFAULT_CHAIN_ID = 61997;
-const DEFAULT_CHAIN_NAME = "GenLayer Studio Next";
+const DEFAULT_CHAIN_NAME = "GenLayer Studio Dev";
 const DEFAULT_SYMBOL = "GEN";
 
 export const CLAUSEROOT_GOVERNOR =
@@ -29,8 +30,21 @@ function parseChainId(value: string | undefined): number {
   return parsed;
 }
 
+function resolveRpcUrl(value: string | undefined): string {
+  const configured = value?.trim();
+  if (!configured) return CANONICAL_STUDIO_DEV_RPC;
+
+  // Studio Next is a browser alias for the Studio development preview. The
+  // canonical RPC is required for wallet/EIP-1193 compatibility.
+  if (configured.replace(/\/$/, "") === STUDIO_NEXT_ALIAS_RPC) {
+    return CANONICAL_STUDIO_DEV_RPC;
+  }
+
+  return configured;
+}
+
 const chainId = parseChainId(process.env.NEXT_PUBLIC_GENLAYER_CHAIN_ID);
-const rpcUrl = process.env.NEXT_PUBLIC_GENLAYER_RPC_URL || DEFAULT_RPC_URL;
+const rpcUrl = resolveRpcUrl(process.env.NEXT_PUBLIC_GENLAYER_RPC_URL);
 const chainName = process.env.NEXT_PUBLIC_GENLAYER_CHAIN_NAME || DEFAULT_CHAIN_NAME;
 const symbol = process.env.NEXT_PUBLIC_GENLAYER_SYMBOL || DEFAULT_SYMBOL;
 
@@ -50,8 +64,8 @@ export const GENLAYER_CHAIN = {
   },
 } satisfies typeof studioDevnet;
 
-export const GENLAYER_NETWORK = "studio-next" as const;
-export const GENLAYER_NETWORK_LABEL = "STUDIO NEXT";
+export const GENLAYER_NETWORK = "studio-dev" as const;
+export const GENLAYER_NETWORK_LABEL = "STUDIO DEV";
 export const GENLAYER_CHAIN_ID_DECIMAL = chainId;
 export const GENLAYER_CHAIN_ID_HEX = `0x${chainId.toString(16)}`;
 export const GENLAYER_RPC_URL = rpcUrl;
