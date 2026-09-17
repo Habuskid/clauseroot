@@ -31,7 +31,7 @@ type ProposalRecord = {
 };
 
 export default function ProposalPage() {
-  const { address, provider, connect } = useWallet();
+  const { address, provider, authenticated, connect } = useWallet();
   const [governor, setGovernor] = useState<string>(CLAUSEROOT_GOVERNOR);
   const [version, setVersion] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -54,12 +54,12 @@ export default function ProposalPage() {
       return;
     }
 
-    if (!address || !provider) {
+    if (!address || !provider || !authenticated) {
       const connected = await connect();
       setNotice(
         connected
-          ? "Wallet connected. Review the proposal and submit again to estimate fees and sign it."
-          : "Connect a Studio Next wallet before submitting.",
+          ? "Wallet authenticated on GenLayer Studio Dev. Review the proposal and submit again to estimate fees and sign it."
+          : "Connect your wallet and approve the GenLayer Studio Dev network before submitting.",
       );
       return;
     }
@@ -79,7 +79,7 @@ export default function ProposalPage() {
       const quote = await kit.estimate({ preset: "standard" }, tx);
       if (quote.verification.status === "mismatch") {
         throw new Error(
-          "Studio Next fee policy changed while quoting. Re-submit to get a fresh verified quote.",
+          "Studio Dev fee policy changed while quoting. Re-submit to get a fresh verified quote.",
         );
       }
 
@@ -149,7 +149,7 @@ export default function ProposalPage() {
 
   const buttonLabel =
     stage === "ESTIMATING"
-      ? "ESTIMATING STUDIO NEXT FEES…"
+      ? "ESTIMATING STUDIO DEV FEES…"
       : stage === "SIGNING"
         ? "CONFIRM IN WALLET…"
         : stage === "FINALIZING" || stage === "SUBMITTED"
@@ -166,7 +166,7 @@ export default function ProposalPage() {
         <PanelTitle
           label="SOURCE PAYLOAD"
           title="Review before signing"
-          note={address ? "WALLET CONNECTED" : "WALLET REQUIRED"}
+          note={authenticated ? "WALLET AUTHENTICATED" : "WALLET REQUIRED"}
         />
         <form className="proposal-form" onSubmit={submit}>
           <label>
