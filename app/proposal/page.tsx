@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { isSuccessful } from "genlayer-js";
 import { Page, PanelTitle } from "../components/page-ui";
 import { useWallet } from "../components/wallet-button";
 import { isContractAddress, readClient } from "../../lib/genlayer";
@@ -51,9 +50,11 @@ export default function ProposalPage() {
     }
 
     if (!address || !provider) {
-      await connect();
+      const connected = await connect();
       setNotice(
-        "Wallet connected. Review the proposal and submit again to estimate fees and sign it.",
+        connected
+          ? "Wallet connected. Review the proposal and submit again to estimate fees and sign it."
+          : "Connect a Studio Next wallet before submitting.",
       );
       return;
     }
@@ -71,7 +72,6 @@ export default function ProposalPage() {
 
       setStage("ESTIMATING");
       const quote = await kit.estimate({ preset: "standard" }, tx);
-
       if (quote.verification.status === "mismatch") {
         throw new Error(
           "Studio Next fee policy changed while quoting. Re-submit to get a fresh verified quote.",
@@ -83,16 +83,23 @@ export default function ProposalPage() {
       setTxId(String(genlayerTxId));
       setStage("SUBMITTED");
 
-      await kit.track(genlayerTxId, () => {
-        setStage("FINALIZING");
-      });
+      const tracked = await kit.track(
+        genlayerTxId,
+        (status) => {
+          if (
+            status.phase === "processing" ||
+            status.phase === "decided" ||
+            status.phase === "finalized"
+          ) {
+            setStage("FINALIZING");
+          }
+        },
+        { until: "finalized" },
+      );
 
-      const receipt = await readClient.waitForFinalization({
-        hash: genlayerTxId,
-      });
-      if (!isSuccessful(receipt)) {
+      if (tracked.successful !== true) {
         throw new Error(
-          `Proposal finalized without successful execution (${receipt.statusName ?? "unknown status"} / ${receipt.txExecutionResultName ?? "unknown result"}).`,
+          `Proposal finalized without successful execution (${tracked.statusName ?? "unknown status"} / ${tracked.executionResultName ?? "unknown result"}).`,
         );
       }
 
