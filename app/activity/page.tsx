@@ -20,7 +20,7 @@ type Proposal = {
 };
 
 export default function ActivityPage() {
-  const [governor, setGovernor] = useState(CLAUSEROOT_GOVERNOR);
+  const [governor, setGovernor] = useState<string>(CLAUSEROOT_GOVERNOR);
   const [records, setRecords] = useState<Proposal[]>([]);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
