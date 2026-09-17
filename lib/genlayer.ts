@@ -6,6 +6,20 @@ const DEFAULT_CHAIN_ID = 61997;
 const DEFAULT_CHAIN_NAME = "GenLayer Studio Next";
 const DEFAULT_SYMBOL = "GEN";
 
+export const CLAUSEROOT_GOVERNOR =
+  "0xBB7430D2AE62BDE464575d1c5b7015eA4C29dFA2" as const;
+export const CLAUSEROOT_TARGET =
+  "0x7f9287dFd869341E22Bb0270f06F43dacE1DcBB7" as const;
+
+export const CLAUSEROOT_V1_DEPLOY_TX =
+  "0x2f0dd41848c31bd3bdf251cb70ea246a60f6251e3586ef3fbe6db4ebe86fc791" as const;
+export const CLAUSEROOT_GOVERNANCE_HANDOFF_TX =
+  "0xa3ecc64e816ff5bea956d3ee493a65d3d0c7acf2aea172edb340d520c6503446" as const;
+export const CLAUSEROOT_V2_PROPOSAL_TX =
+  "0xaa509b3203a26ff1d6e44323d233e583ace39ca36275ed96e677d2c7dc797211" as const;
+export const CLAUSEROOT_V3_PROPOSAL_TX =
+  "0x0e412e3956a3a6f80b810d0c1e6f196f288dd51579aa84819f454c11e776ffaa" as const;
+
 function parseChainId(value: string | undefined): number {
   if (!value?.trim()) return DEFAULT_CHAIN_ID;
   const parsed = Number(value);
