@@ -4,7 +4,11 @@ import { FormEvent, useState } from "react";
 import type { TransactionHash } from "genlayer-js/types";
 import { Page, PanelTitle } from "../components/page-ui";
 import { useWallet } from "../components/wallet-button";
-import { isContractAddress, readClient } from "../../lib/genlayer";
+import {
+  CLAUSEROOT_GOVERNOR,
+  isContractAddress,
+  readClient,
+} from "../../lib/genlayer";
 import { createClauseRootTransactionKit } from "../../lib/transaction-kit";
 
 type Lifecycle =
@@ -28,7 +32,7 @@ type ProposalRecord = {
 
 export default function ProposalPage() {
   const { address, provider, connect } = useWallet();
-  const [governor, setGovernor] = useState("");
+  const [governor, setGovernor] = useState(CLAUSEROOT_GOVERNOR);
   const [version, setVersion] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [source, setSource] = useState("");
@@ -156,7 +160,7 @@ export default function ProposalPage() {
     <Page
       title="New proposal"
       kicker="PROPOSAL / SOURCE REVIEW"
-      intro="Submit exact contract bytes and a commit-pinned public source URL. Transaction Kit quotes Studio Next fees, your wallet signs the transaction, and validators decide the constitutional result."
+      intro="Submit exact contract bytes and a commit-pinned public source URL to the live ClauseRoot Governor. The browser prepares the transaction; GenLayer validators decide the constitutional result."
     >
       <section className="panel narrow-panel">
         <PanelTitle
@@ -180,7 +184,7 @@ export default function ProposalPage() {
               <input
                 value={version}
                 onChange={(event) => setVersion(event.target.value)}
-                placeholder="e.g. 2.0"
+                placeholder="e.g. v4.0"
                 required
               />
             </label>
