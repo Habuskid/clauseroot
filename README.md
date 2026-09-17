@@ -12,15 +12,15 @@ ClauseRoot is an experimental hackathon project. It is not a security audit, for
 
 | Item | Value |
 | --- | --- |
-| Network | GenLayer Studio Next |
-| RPC | `https://studio-next.genlayer.com/api` |
+| Network | GenLayer Studio Dev / Studio Next preview |
+| RPC | `https://studio-dev.genlayer.com/api` |
 | Chain ID | `61997` |
 | Explorer | `https://explorer-studio-dev.genlayer.com/` |
 | GenLayerJS | `2.0.0-rc.1` |
 | Transaction Kit | `0.1.0-rc.2` |
 | React adapter | `0.1.0-rc.2` |
 
-The frontend uses Transaction Kit for live Studio Next fee estimation before wallet signing. The Governor, target state and proposal history are read directly from Studio Next.
+The frontend uses Transaction Kit for live GenLayer fee estimation before wallet signing. The Governor, target state and proposal history are read directly from the live network.
 
 ## Why decentralized judgment matters
 
@@ -59,7 +59,7 @@ Protocol developer
       v
 ClauseRoot web app
       |
-      | wallet-signed Studio Next transaction
+      | wallet-signed GenLayer transaction
       v
 ClauseRoot Governor
       |
@@ -77,7 +77,7 @@ GenLayer validators
 
 The contract state is authoritative. ClauseRoot uses no backend database for proposals, decisions or execution records.
 
-## Live Studio Next deployment
+## Live GenLayer deployment
 
 | Item | Value |
 | --- | --- |
@@ -132,10 +132,11 @@ Test-only authority fixture used by the local cross-contract upgrade integration
 The Next.js application provides:
 
 - `/` product explanation;
+- `/docs` public project documentation;
 - `/dashboard` the live Governor/target pair and authoritative target-state reads;
-- `/proposal` Studio Next fee estimation, wallet signing and proposal submission;
+- `/proposal` live fee estimation, wallet signing and proposal submission;
 - `/activity` live on-chain proposal history; and
-- `/settings` the exact Studio Next network configuration.
+- `/settings` the exact GenLayer network configuration.
 
 The dashboard and activity pages default to the verified hackathon deployment above. No transaction, validator verdict, proposal or deployment is fabricated.
 
@@ -145,7 +146,7 @@ Requirements:
 
 - Node.js 20+
 - an EIP-1193 browser wallet
-- access to GenLayer Studio Next
+- access to GenLayer Studio Dev
 
 Install the frontend:
 
@@ -174,7 +175,7 @@ npm run build
 
 ## Python tests
 
-The repository also includes direct and integration tests for contract behavior. The local integration test proves the lower-level finalized upgrade path and storage preservation. Consensus itself is not mocked as evidence for the hackathon submission; the proof above comes from the real Studio Next deployment.
+The repository also includes direct and integration tests for contract behavior. The local integration test proves the lower-level finalized upgrade path and storage preservation. Consensus itself is not mocked as evidence for the hackathon submission; the proof above comes from the real GenLayer deployment.
 
 ## Demonstrated golden path
 
@@ -209,7 +210,7 @@ V1 target
 
 `https://clauseroot.vercel.app`
 
-Before recording a demo, verify `/settings` reports chain `61997`, `/dashboard` resolves the live target as `2.0`, and `/activity` shows Proposal #1 as `APPROVE` and Proposal #2 as `REJECT`.
+Public documentation is available at `/docs`. Before recording a demo, verify `/settings` reports chain `61997`, `/dashboard` resolves the live target as `2.0`, and `/activity` shows Proposal #1 as `APPROVE` and Proposal #2 as `REJECT`.
 
 ## License
 
