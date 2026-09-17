@@ -32,7 +32,7 @@ type ProposalRecord = {
 
 export default function ProposalPage() {
   const { address, provider, connect } = useWallet();
-  const [governor, setGovernor] = useState(CLAUSEROOT_GOVERNOR);
+  const [governor, setGovernor] = useState<string>(CLAUSEROOT_GOVERNOR);
   const [version, setVersion] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [source, setSource] = useState("");
