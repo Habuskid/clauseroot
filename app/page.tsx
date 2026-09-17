@@ -10,7 +10,7 @@ export default function LandingPage() {
           <span>ClauseRoot</span>
         </Link>
         <span>CONSTITUTIONAL UPGRADE CONTROL</span>
-        <Link href="/dashboard">Protocol console ↗</Link>
+        <Link href="/dashboard">Launch app ↗</Link>
       </nav>
 
       <section className="landing-hero">
@@ -59,7 +59,7 @@ export default function LandingPage() {
       <footer className="landing-footer">
         <span>ClauseRoot</span>
         <span>Built on GenLayer Studio Next</span>
-        <Link href="/dashboard">Enter console ↗</Link>
+        <Link href="/dashboard">Launch app ↗</Link>
       </footer>
     </main>
   );
