@@ -9,18 +9,18 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { initialized, authenticated } = useWallet();
-  const isLanding = pathname === "/";
+  const isPublicRoute = pathname === "/" || pathname.startsWith("/docs");
 
   useEffect(() => {
-    if (isLanding || !initialized || authenticated) return;
+    if (isPublicRoute || !initialized || authenticated) return;
 
     // Any loss of the authenticated wallet session (manual logout, account
     // permission removal, account disconnect, or leaving the required chain)
     // closes the protected console and returns the user to the public landing.
     router.replace("/");
-  }, [authenticated, initialized, isLanding, router]);
+  }, [authenticated, initialized, isPublicRoute, router]);
 
-  if (isLanding) return children;
+  if (isPublicRoute) return children;
 
   if (!initialized || !authenticated) {
     return (
