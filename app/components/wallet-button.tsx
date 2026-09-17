@@ -5,6 +5,7 @@ import {
   GENLAYER_CHAIN,
   GENLAYER_CHAIN_ID_DECIMAL,
   GENLAYER_CHAIN_ID_HEX,
+  GENLAYER_EXPLORER_URL,
   GENLAYER_RPC_URL,
 } from "../../lib/genlayer";
 
@@ -33,6 +34,68 @@ type WalletState = {
 
 const WalletContext = createContext<WalletState | null>(null);
 
+async function readWalletChainId(provider: EthereumProvider): Promise<number> {
+  const value = await provider.request({ method: "eth_chainId" });
+  if (typeof value !== "string") {
+    throw new Error("The wallet returned an invalid chain ID.");
+  }
+
+  const parsed = Number.parseInt(value, 16);
+  if (!Number.isSafeInteger(parsed)) {
+    throw new Error(`The wallet returned an invalid chain ID: ${value}`);
+  }
+  return parsed;
+}
+
+async function addGenLayerNetwork(provider: EthereumProvider) {
+  await provider.request({
+    method: "wallet_addEthereumChain",
+    params: [
+      {
+        chainId: GENLAYER_CHAIN_ID_HEX,
+        chainName: GENLAYER_CHAIN.name,
+        rpcUrls: [GENLAYER_RPC_URL],
+        nativeCurrency: GENLAYER_CHAIN.nativeCurrency,
+        blockExplorerUrls: [GENLAYER_EXPLORER_URL],
+      },
+    ],
+  });
+}
+
+async function ensureGenLayerNetwork(provider: EthereumProvider): Promise<number> {
+  const current = await readWalletChainId(provider);
+  if (current === GENLAYER_CHAIN_ID_DECIMAL) return current;
+
+  try {
+    await provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: GENLAYER_CHAIN_ID_HEX }],
+    });
+  } catch (switchError) {
+    if (getErrorCode(switchError) === 4001) throw switchError;
+    if (getErrorCode(switchError) !== 4902) throw switchError;
+
+    await addGenLayerNetwork(provider);
+
+    const afterAdd = await readWalletChainId(provider);
+    if (afterAdd !== GENLAYER_CHAIN_ID_DECIMAL) {
+      await provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: GENLAYER_CHAIN_ID_HEX }],
+      });
+    }
+  }
+
+  const verified = await readWalletChainId(provider);
+  if (verified !== GENLAYER_CHAIN_ID_DECIMAL) {
+    throw new Error(
+      `Wallet stayed on chain ${verified}. Switch to GenLayer Studio Dev (${GENLAYER_CHAIN_ID_DECIMAL}) and try again.`,
+    );
+  }
+
+  return verified;
+}
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [address, setAddress] = useState("");
   const [provider, setProvider] = useState<EthereumProvider | null>(null);
@@ -43,56 +106,37 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   async function connect() {
     setError("");
-    if (!window.ethereum) {
+    const injected = window.ethereum;
+    if (!injected) {
       setError("Install MetaMask or another EIP-1193 browser wallet first.");
       return false;
     }
 
     setBusy(true);
+    setProvider(injected);
+
     try {
-      const accounts = (await window.ethereum.request({
+      const accounts = (await injected.request({
         method: "eth_requestAccounts",
       })) as string[];
       const next = accounts[0] ?? "";
       if (!next) throw new Error("The wallet returned no account.");
 
-      setProvider(window.ethereum);
+      const verifiedChain = await ensureGenLayerNetwork(injected);
+
+      // Only mark the wallet authenticated after account access and network
+      // verification have both succeeded.
       setAddress(next);
-
-      const current = (await window.ethereum.request({
-        method: "eth_chainId",
-      })) as string;
-
-      if (current.toLowerCase() !== GENLAYER_CHAIN_ID_HEX.toLowerCase()) {
-        try {
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: GENLAYER_CHAIN_ID_HEX }],
-          });
-        } catch (switchError) {
-          if (getErrorCode(switchError) !== 4902) throw switchError;
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: GENLAYER_CHAIN_ID_HEX,
-                chainName: GENLAYER_CHAIN.name,
-                rpcUrls: [GENLAYER_RPC_URL],
-                nativeCurrency: GENLAYER_CHAIN.nativeCurrency,
-                blockExplorerUrls: [],
-              },
-            ],
-          });
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: GENLAYER_CHAIN_ID_HEX }],
-          });
-        }
-      }
-
-      setChainId(GENLAYER_CHAIN_ID_DECIMAL);
+      setChainId(verifiedChain);
       return true;
     } catch (cause) {
+      // Do not leave the UI looking connected after a failed network switch.
+      setAddress("");
+      try {
+        setChainId(await readWalletChainId(injected));
+      } catch {
+        setChainId(null);
+      }
       setError(walletError(cause));
       return false;
     } finally {
@@ -119,10 +163,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       .catch(() => setError("The browser wallet could not be inspected."))
       .finally(() => setInitialized(true));
 
-    const accountHandler = (...args: unknown[]) =>
+    const accountHandler = (...args: unknown[]) => {
       setAddress((args[0] as string[])?.[0] ?? "");
-    const chainHandler = (...args: unknown[]) =>
+      setError("");
+    };
+    const chainHandler = (...args: unknown[]) => {
       setChainId(Number.parseInt(args[0] as string, 16));
+      setError("");
+    };
 
     injected.on?.("accountsChanged", accountHandler);
     injected.on?.("chainChanged", chainHandler);
@@ -160,7 +208,7 @@ export function useWallet(): WalletState {
 }
 
 export function WalletButton() {
-  const { address, busy, error, connect } = useWallet();
+  const { address, authenticated, busy, error, connect } = useWallet();
   return (
     <div className="wallet-wrap">
       <button
@@ -171,9 +219,11 @@ export function WalletButton() {
       >
         {busy
           ? "CONNECTING…"
-          : address
-            ? `${address.slice(0, 6)}…${address.slice(-4)}`
-            : "CONNECT WALLET"}
+          : address && !authenticated
+            ? "SWITCH NETWORK"
+            : authenticated
+              ? `${address.slice(0, 6)}…${address.slice(-4)}`
+              : "CONNECT WALLET"}
       </button>
       {error && (
         <span className="wallet-error" role="alert">
@@ -185,20 +235,50 @@ export function WalletButton() {
 }
 
 function getErrorCode(cause: unknown): number | undefined {
-  return typeof cause === "object" && cause !== null && "code" in cause
-    ? Number((cause as { code: unknown }).code)
-    : undefined;
+  if (typeof cause !== "object" || cause === null) return undefined;
+
+  if ("code" in cause) {
+    const code = Number((cause as { code: unknown }).code);
+    if (Number.isFinite(code)) return code;
+  }
+
+  if ("cause" in cause) {
+    return getErrorCode((cause as { cause: unknown }).cause);
+  }
+
+  return undefined;
+}
+
+function getErrorMessage(cause: unknown): string {
+  if (cause instanceof Error && cause.message) return cause.message;
+  if (typeof cause !== "object" || cause === null) return "";
+
+  for (const key of ["shortMessage", "message", "details"] as const) {
+    if (key in cause) {
+      const value = (cause as Record<string, unknown>)[key];
+      if (typeof value === "string" && value.trim()) return value;
+    }
+  }
+
+  if ("cause" in cause) {
+    return getErrorMessage((cause as { cause: unknown }).cause);
+  }
+
+  return "";
 }
 
 function walletError(cause: unknown): string {
   const code = getErrorCode(cause);
   if (code === 4001) {
-    return "Wallet request cancelled. Approve account access and the Studio Next network switch to continue.";
+    return "Wallet request cancelled. Approve account access and the GenLayer Studio Dev network switch to continue.";
   }
   if (code === -32002) {
     return "A wallet request is already open. Complete it in the wallet extension.";
   }
-  return cause instanceof Error && cause.message
-    ? cause.message
-    : "The wallet could not connect to GenLayer Studio Next.";
+  if (code === 4902) {
+    return "GenLayer Studio Dev is not configured in this wallet. Try Connect Wallet again to add the network.";
+  }
+
+  const message = getErrorMessage(cause);
+  return message || "The wallet could not connect to GenLayer Studio Dev.";
 }
