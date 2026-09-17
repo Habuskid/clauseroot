@@ -10,7 +10,6 @@ export default function LandingPage() {
           <span>ClauseRoot</span>
         </Link>
         <span>CONSTITUTIONAL UPGRADE CONTROL</span>
-        <Link href="/dashboard">Launch app ↗</Link>
       </nav>
 
       <section className="landing-hero">
