@@ -1,4 +1,4 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# { "Depends": "py-genlayer:9b8kjyda2ycxyq4ea6g4yfpnydxhd52gqba5rb8dw7krkh5mn9p0" }
 
 from genlayer import *
 
@@ -72,7 +72,6 @@ class ClauseRootGovernor(gl.Contract):
         self, proposed_version: str, source_url: str, proposed_code: bytes
     ) -> u256:
         self._validate_proposal(proposed_version, source_url, proposed_code)
-
         prompt = self._review_prompt(proposed_code)
 
         def evaluate() -> dict:
@@ -83,7 +82,6 @@ class ClauseRootGovernor(gl.Contract):
                 raise gl.vm.UserError("[EXTERNAL] Source evidence unavailable")
             if bytes(response.body) != proposed_code:
                 raise gl.vm.UserError("[EXPECTED] Source does not match upgrade payload")
-
             result = gl.nondet.exec_prompt(prompt, response_format="json")
             return self._normalize_verdict(result)
 
@@ -92,10 +90,8 @@ class ClauseRootGovernor(gl.Contract):
                 return self._validate_error(leader_result, evaluate)
             validator_result = evaluate()
             return (
-                leader_result.calldata["decision"]
-                == validator_result["decision"]
-                and leader_result.calldata["violations"]
-                == validator_result["violations"]
+                leader_result.calldata["decision"] == validator_result["decision"]
+                and leader_result.calldata["violations"] == validator_result["violations"]
             )
 
         verdict = gl.vm.run_nondet_unsafe(evaluate, validate)
@@ -110,15 +106,11 @@ class ClauseRootGovernor(gl.Contract):
         self.used_sources[source_url] = True
 
         if verdict["decision"] == "APPROVE":
-            # Mark before scheduling so this proposal has one effective execution path.
             self.proposal_executed[proposal_id] = True
             UpgradeTarget(self.target).emit(on="finalized").upgrade(proposed_code)
-
         return proposal_id
 
-    def _validate_proposal(
-        self, proposed_version: str, source_url: str, proposed_code: bytes
-    ) -> None:
+    def _validate_proposal(self, proposed_version: str, source_url: str, proposed_code: bytes) -> None:
         if len(proposed_version.strip()) == 0 or len(proposed_version) > 32:
             raise gl.vm.UserError("Invalid proposed version")
         if len(proposed_code) == 0 or len(proposed_code) > MAX_CODE_BYTES:
@@ -192,9 +184,7 @@ SOURCE_END
         }
 
     def _validate_error(self, leader_result: gl.vm.Result, evaluate) -> bool:
-        leader_message = (
-            leader_result.message if hasattr(leader_result, "message") else ""
-        )
+        leader_message = leader_result.message if hasattr(leader_result, "message") else ""
         try:
             evaluate()
             return False
@@ -204,8 +194,6 @@ SOURCE_END
                 return validator_message == leader_message
             if leader_message.startswith("[EXTERNAL]"):
                 return validator_message == leader_message
-            return leader_message.startswith("[TRANSIENT]") and validator_message.startswith(
-                "[TRANSIENT]"
-            )
+            return leader_message.startswith("[TRANSIENT]") and validator_message.startswith("[TRANSIENT]")
         except Exception:
             return False

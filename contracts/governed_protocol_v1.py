@@ -1,4 +1,4 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# { "Depends": "py-genlayer:9b8kjyda2ycxyq4ea6g4yfpnydxhd52gqba5rb8dw7krkh5mn9p0" }
 
 from genlayer import *
 
@@ -17,7 +17,6 @@ class GovernedProtocol(gl.Contract):
         self.value = initial_value
         self.bootstrap_upgrader = gl.message.sender_address
         self.governance_finalized = False
-
         root = gl.storage.Root.get()
         root.upgraders.get().append(self.bootstrap_upgrader)
 
@@ -48,10 +47,8 @@ class GovernedProtocol(gl.Contract):
             raise gl.vm.UserError("Governance is already finalized")
         if gl.message.sender_address != self.bootstrap_upgrader:
             raise gl.vm.UserError("Only the bootstrap upgrader can finalize governance")
-
         root = gl.storage.Root.get()
         upgraders = root.upgraders.get()
-        # Bootstrap is the only upgrader before this one-time handoff.
         if len(upgraders) != 1 or upgraders[0] != self.bootstrap_upgrader:
             raise gl.vm.UserError("Unexpected bootstrap upgrader state")
         upgraders.truncate()

@@ -1,12 +1,181 @@
 "use client";
+
 import Link from "next/link";
 import { useState } from "react";
-import { isContractAddress, readGovernorState, readTargetState, shortenAddress } from "../../lib/genlayer";
+import {
+  isContractAddress,
+  readGovernorState,
+  readTargetState,
+  shortenAddress,
+} from "../../lib/genlayer";
 import { Page, PanelTitle } from "../components/page-ui";
 
 export default function Overview() {
-  const [governor, setGovernor] = useState(""); const [target, setTarget] = useState(""); const [state, setState] = useState<{ value: string; version: string; feeBps: string; governanceFinalized: boolean } | null>(null); const [notice, setNotice] = useState("");
-  async function loadState() { setNotice(""); setState(null); if (!isContractAddress(governor) || !isContractAddress(target)) { setNotice("Enter valid Governor and target addresses."); return; } try { const linked = await readGovernorState(governor as `0x${string}`); if (linked.target.toLowerCase() !== target.toLowerCase()) { setNotice(`Governor points to ${shortenAddress(linked.target)}, not the target entered.`); return; } setState(await readTargetState(target as `0x${string}`)); } catch (cause) { setNotice(cause instanceof Error ? cause.message : "Could not read this deployment."); } }
-  return <Page title="Overview" kicker="GOVERNED PROTOCOL / CONTROL PLANE" intro="Read the live protocol state, verify the Governor link, and see whether governance has been finalized."><section className="hero-row"><div><p className="eyebrow">BRADBURY TESTNET</p><h1>Protocol overview</h1><p className="lede">ClauseRoot makes the upgrade authority and constitutional state inspectable before any proposal is signed.</p></div><div className="version-block"><span>ACTIVE VERSION</span><strong>{state?.version ?? "—"}</strong><small>{state ? `${Number(state.feeBps) / 100}% fee · stored value: ${state.value}` : "connect a deployment below"}</small></div></section><section className="panel deployment-panel"><PanelTitle label="DEPLOYMENT" title="Connect a live pair" note="READS ONLY"/><p className="muted">Use real Governor and target addresses deployed on Bradbury Testnet. The Governor link is checked against the target on-chain.</p><div className="field-row"><label>Governor address<input value={governor} onChange={e => setGovernor(e.target.value)} placeholder="0x…" /></label><label>Target address<input value={target} onChange={e => setTarget(e.target.value)} placeholder="0x…" /></label><button className="outline-button" onClick={loadState}>Load live state ↗</button></div>{notice && <p className="notice">{notice}</p>}</section><div className="two-column"><section className="panel"><PanelTitle label="CONSTITUTION" title="Fixed clauses" note="4 CHECKS"/><div className="clause-list">{[["C1","Fee ceiling","Fee must not exceed 2%."],["C2","User custody","No arbitrary administrator path."],["C3","Withdrawal right","Users retain a direct withdrawal path."],["C4","Governor bypass","Upgrade authority remains governed."]].map(([id, title, copy]) => <div className="clause" key={id}><b>{id}</b><div><strong>{title}</strong><p>{copy}</p></div><span className="clause-state">{state ? "READY TO EVALUATE" : "NOT EVALUATED"}</span></div>)}</div></section><section className="panel"><PanelTitle label="GOVERNANCE" title="Authority status"/><div className="status-stack"><Status label="Governor / target link" value={state ? "VERIFIED" : "NOT CONNECTED"}/><Status label="Bootstrap authority" value={state?.governanceFinalized ? "DISABLED" : state ? "CHECK REQUIRED" : "—"}/><Status label="Protocol version" value={state?.version ?? "—"}/><Status label="Protocol fee" value={state ? `${Number(state.feeBps) / 100}%` : "—"}/><Status label="Target storage" value={state ? "READABLE" : "—"}/></div><div className="next-step"><span>NEXT STEP</span><Link href="/proposal">Prepare a proposal ↗</Link></div></section></div></Page>;
+  const [governor, setGovernor] = useState("");
+  const [target, setTarget] = useState("");
+  const [state, setState] = useState<{
+    value: string;
+    version: string;
+    feeBps: string;
+    governanceFinalized: boolean;
+  } | null>(null);
+  const [notice, setNotice] = useState("");
+
+  async function loadState() {
+    setNotice("");
+    setState(null);
+
+    if (!isContractAddress(governor) || !isContractAddress(target)) {
+      setNotice("Enter valid Governor and target addresses.");
+      return;
+    }
+
+    try {
+      const linked = await readGovernorState(governor as `0x${string}`);
+      if (linked.target.toLowerCase() !== target.toLowerCase()) {
+        setNotice(
+          `Governor points to ${shortenAddress(linked.target)}, not the target entered.`,
+        );
+        return;
+      }
+      setState(await readTargetState(target as `0x${string}`));
+    } catch (cause) {
+      setNotice(
+        cause instanceof Error ? cause.message : "Could not read this deployment.",
+      );
+    }
+  }
+
+  return (
+    <Page
+      title="Overview"
+      kicker="GOVERNED PROTOCOL / CONTROL PLANE"
+      intro="Read the live protocol state, verify the Governor link, and see whether governance has been finalized."
+    >
+      <section className="hero-row">
+        <div>
+          <p className="eyebrow">GENLAYER STUDIO NEXT</p>
+          <h1>Protocol overview</h1>
+          <p className="lede">
+            ClauseRoot makes the upgrade authority and constitutional state
+            inspectable before any proposal is signed.
+          </p>
+        </div>
+        <div className="version-block">
+          <span>ACTIVE VERSION</span>
+          <strong>{state?.version ?? "—"}</strong>
+          <small>
+            {state
+              ? `${Number(state.feeBps) / 100}% fee · stored value: ${state.value}`
+              : "connect a deployment below"}
+          </small>
+        </div>
+      </section>
+
+      <section className="panel deployment-panel">
+        <PanelTitle
+          label="DEPLOYMENT"
+          title="Connect a live pair"
+          note="READS ONLY"
+        />
+        <p className="muted">
+          Use real Governor and target addresses deployed on Studio Next. The
+          Governor link is checked against the target on-chain.
+        </p>
+        <div className="field-row">
+          <label>
+            Governor address
+            <input
+              value={governor}
+              onChange={(event) => setGovernor(event.target.value)}
+              placeholder="0x…"
+            />
+          </label>
+          <label>
+            Target address
+            <input
+              value={target}
+              onChange={(event) => setTarget(event.target.value)}
+              placeholder="0x…"
+            />
+          </label>
+          <button className="outline-button" onClick={loadState}>
+            Load live state ↗
+          </button>
+        </div>
+        {notice && <p className="notice">{notice}</p>}
+      </section>
+
+      <div className="two-column">
+        <section className="panel">
+          <PanelTitle
+            label="CONSTITUTION"
+            title="Fixed clauses"
+            note="4 CHECKS"
+          />
+          <div className="clause-list">
+            {[
+              ["C1", "Fee ceiling", "Fee must not exceed 2%."],
+              ["C2", "User custody", "No arbitrary administrator path."],
+              ["C3", "Withdrawal right", "Users retain a direct withdrawal path."],
+              ["C4", "Governor bypass", "Upgrade authority remains governed."],
+            ].map(([id, title, copy]) => (
+              <div className="clause" key={id}>
+                <b>{id}</b>
+                <div>
+                  <strong>{title}</strong>
+                  <p>{copy}</p>
+                </div>
+                <span className="clause-state">
+                  {state ? "READY TO EVALUATE" : "NOT EVALUATED"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel">
+          <PanelTitle label="GOVERNANCE" title="Authority status" />
+          <div className="status-stack">
+            <Status
+              label="Governor / target link"
+              value={state ? "VERIFIED" : "NOT CONNECTED"}
+            />
+            <Status
+              label="Bootstrap authority"
+              value={
+                state?.governanceFinalized
+                  ? "DISABLED"
+                  : state
+                    ? "CHECK REQUIRED"
+                    : "—"
+              }
+            />
+            <Status label="Protocol version" value={state?.version ?? "—"} />
+            <Status
+              label="Protocol fee"
+              value={state ? `${Number(state.feeBps) / 100}%` : "—"}
+            />
+            <Status
+              label="Target storage"
+              value={state ? "READABLE" : "—"}
+            />
+          </div>
+          <div className="next-step">
+            <span>NEXT STEP</span>
+            <Link href="/proposal">Prepare a proposal ↗</Link>
+          </div>
+        </section>
+      </div>
+    </Page>
+  );
 }
-function Status({ label, value }: { label: string; value: string }) { return <div className="status-row"><span>{label}</span><strong>{value}</strong></div>; }
+
+function Status({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="status-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}

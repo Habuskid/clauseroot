@@ -1,4 +1,4 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# { "Depends": "py-genlayer:9b8kjyda2ycxyq4ea6g4yfpnydxhd52gqba5rb8dw7krkh5mn9p0" }
 
 from genlayer import *
 
@@ -23,7 +23,6 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.view
     def get_fee_bps(self) -> u256:
-        # Violates C1: 10 percent is above the constitutional 2 percent ceiling.
         return u256(1000)
 
     @gl.public.view
@@ -36,7 +35,6 @@ class GovernedProtocol(gl.Contract):
 
     @gl.public.write
     def upgrade(self, new_code: bytes) -> None:
-        # Violates C4: any caller could replace the root code through this method.
         root = gl.storage.Root.get()
         root.upgraders.get().append(gl.message.sender_address)
         code = root.code.get()
