@@ -9,6 +9,8 @@ import {
   GENLAYER_RPC_URL,
 } from "../../lib/genlayer";
 
+const DISCONNECT_FLAG = "clauseroot_wallet_disconnected";
+
 export type EthereumProvider = {
   isMetaMask?: boolean;
   providers?: EthereumProvider[];
@@ -32,6 +34,7 @@ type WalletState = {
   busy: boolean;
   error: string;
   connect: () => Promise<boolean>;
+  disconnect: () => Promise<void>;
 };
 
 const WalletContext = createContext<WalletState | null>(null);
@@ -43,13 +46,17 @@ function getInjectedProvider(): EthereumProvider | null {
   const providers = injected.providers;
 
   if (Array.isArray(providers) && providers.length > 0) {
-    // When several extensions inject providers, prefer MetaMask if present.
-    // Otherwise use the browser-selected provider instead of guessing another
-    // extension. This prevents a secondary wallet from intercepting the flow.
     return providers.find((candidate) => candidate.isMetaMask) ?? injected;
   }
 
   return injected;
+}
+
+function wasDisconnected() {
+  return (
+    typeof window !== "undefined" &&
+    window.localStorage.getItem(DISCONNECT_FLAG) === "true"
+  );
 }
 
 async function readWalletChainId(provider: EthereumProvider): Promise<number> {
@@ -97,10 +104,6 @@ async function ensureGenLayerNetwork(provider: EthereumProvider): Promise<number
     if (getErrorCode(switchError) === 4001) throw switchError;
     if (!isUnknownChainError(switchError)) throw switchError;
 
-    // 0xf22d / 61997 is not present in the wallet yet. Add the exact Studio
-    // Dev definition, then explicitly switch. Some wallets auto-switch after
-    // add while others register the network asynchronously, so verify and
-    // retry the switch once after a short delay when necessary.
     await addGenLayerNetwork(provider);
 
     if ((await readWalletChainId(provider)) !== GENLAYER_CHAIN_ID_DECIMAL) {
@@ -154,14 +157,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       const verifiedChain = await ensureGenLayerNetwork(injected);
 
-      // Only mark the wallet authenticated after account access and network
-      // verification have both succeeded. Proposal signing is therefore never
-      // enabled while the wallet is on another chain.
+      window.localStorage.removeItem(DISCONNECT_FLAG);
       setAddress(next);
       setChainId(verifiedChain);
       return true;
     } catch (cause) {
-      // Do not leave the UI looking connected after a failed network switch.
       setAddress("");
       try {
         setChainId(await readWalletChainId(injected));
@@ -172,6 +172,28 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       return false;
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function disconnect() {
+    const injected = provider ?? getInjectedProvider();
+    window.localStorage.setItem(DISCONNECT_FLAG, "true");
+    setAddress("");
+    setError("");
+
+    if (!injected) return;
+
+    // MetaMask supports permission revocation. Other EIP-1193 wallets may not,
+    // so ClauseRoot always clears its own authenticated session first and then
+    // asks the wallet to revoke account access when that method is available.
+    try {
+      await injected.request({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }],
+      });
+    } catch {
+      // Local disconnect remains authoritative for the app even when the wallet
+      // does not implement wallet_revokePermissions.
     }
   }
 
@@ -188,14 +210,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       injected.request({ method: "eth_chainId" }),
     ])
       .then(([accounts, chain]) => {
-        setAddress(((accounts as string[]) ?? [])[0] ?? "");
+        const nextAddress = ((accounts as string[]) ?? [])[0] ?? "";
+        setAddress(wasDisconnected() ? "" : nextAddress);
         setChainId(Number.parseInt(chain as string, 16));
       })
       .catch(() => setError("The browser wallet could not be inspected."))
       .finally(() => setInitialized(true));
 
     const accountHandler = (...args: unknown[]) => {
-      setAddress((args[0] as string[])?.[0] ?? "");
+      const nextAddress = (args[0] as string[])?.[0] ?? "";
+      setAddress(wasDisconnected() ? "" : nextAddress);
       setError("");
     };
     const chainHandler = (...args: unknown[]) => {
@@ -225,6 +249,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       busy,
       error,
       connect,
+      disconnect,
     }),
     [address, provider, chainId, initialized, authenticated, busy, error],
   );
@@ -239,23 +264,91 @@ export function useWallet(): WalletState {
 }
 
 export function WalletButton() {
-  const { address, authenticated, busy, error, connect } = useWallet();
+  const { address, authenticated, busy, error, connect, disconnect } = useWallet();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  async function handlePrimaryClick() {
+    if (authenticated) {
+      setMenuOpen((current) => !current);
+      return;
+    }
+    setMenuOpen(false);
+    await connect();
+  }
+
+  async function handleDisconnect() {
+    setMenuOpen(false);
+    await disconnect();
+  }
+
   return (
-    <div className="wallet-wrap">
+    <div className="wallet-wrap" style={{ position: "relative" }}>
       <button
         className="wallet-button"
         type="button"
-        onClick={connect}
+        onClick={handlePrimaryClick}
         disabled={busy}
+        aria-expanded={authenticated ? menuOpen : undefined}
+        aria-haspopup={authenticated ? "menu" : undefined}
       >
         {busy
           ? "CONNECTING…"
           : address && !authenticated
             ? "SWITCH NETWORK"
             : authenticated
-              ? `${address.slice(0, 6)}…${address.slice(-4)}`
+              ? `${address.slice(0, 6)}…${address.slice(-4)}  ▾`
               : "CONNECT WALLET"}
       </button>
+
+      {authenticated && menuOpen && (
+        <div
+          role="menu"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            right: 0,
+            zIndex: 50,
+            width: 230,
+            padding: 10,
+            border: "1px solid var(--ink)",
+            borderRadius: 7,
+            background: "var(--paper)",
+            boxShadow: "0 10px 28px rgba(0,0,0,.10)",
+            textAlign: "left",
+          }}
+        >
+          <div style={{ padding: "4px 6px 10px", borderBottom: "1px solid var(--line)" }}>
+            <div style={{ font: "10px monospace", color: "var(--muted)", letterSpacing: ".08em" }}>
+              CONNECTED WALLET
+            </div>
+            <div style={{ marginTop: 6, font: "12px monospace", overflowWrap: "anywhere" }}>
+              {address}
+            </div>
+            <div style={{ marginTop: 6, font: "10px monospace", color: "var(--muted)" }}>
+              STUDIO DEV · {GENLAYER_CHAIN_ID_DECIMAL}
+            </div>
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleDisconnect}
+            style={{
+              width: "100%",
+              marginTop: 8,
+              padding: "10px 8px",
+              border: 0,
+              borderRadius: 4,
+              background: "transparent",
+              color: "#8b1e1e",
+              textAlign: "left",
+              font: "700 11px monospace",
+            }}
+          >
+            DISCONNECT WALLET
+          </button>
+        </div>
+      )}
+
       {error && (
         <span className="wallet-error" role="alert">
           {error}
