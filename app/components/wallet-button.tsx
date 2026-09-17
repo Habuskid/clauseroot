@@ -10,6 +10,8 @@ import {
 } from "../../lib/genlayer";
 
 export type EthereumProvider = {
+  isMetaMask?: boolean;
+  providers?: EthereumProvider[];
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
   on?: (event: string, cb: (...args: unknown[]) => void) => void;
   removeListener?: (event: string, cb: (...args: unknown[]) => void) => void;
@@ -33,6 +35,22 @@ type WalletState = {
 };
 
 const WalletContext = createContext<WalletState | null>(null);
+
+function getInjectedProvider(): EthereumProvider | null {
+  if (typeof window === "undefined" || !window.ethereum) return null;
+
+  const injected = window.ethereum;
+  const providers = injected.providers;
+
+  if (Array.isArray(providers) && providers.length > 0) {
+    // When several extensions inject providers, prefer MetaMask if present.
+    // Otherwise use the browser-selected provider instead of guessing another
+    // extension. This prevents a secondary wallet from intercepting the flow.
+    return providers.find((candidate) => candidate.isMetaMask) ?? injected;
+  }
+
+  return injected;
+}
 
 async function readWalletChainId(provider: EthereumProvider): Promise<number> {
   const value = await provider.request({ method: "eth_chainId" });
@@ -62,27 +80,39 @@ async function addGenLayerNetwork(provider: EthereumProvider) {
   });
 }
 
+async function switchGenLayerNetwork(provider: EthereumProvider) {
+  await provider.request({
+    method: "wallet_switchEthereumChain",
+    params: [{ chainId: GENLAYER_CHAIN_ID_HEX }],
+  });
+}
+
 async function ensureGenLayerNetwork(provider: EthereumProvider): Promise<number> {
   const current = await readWalletChainId(provider);
   if (current === GENLAYER_CHAIN_ID_DECIMAL) return current;
 
   try {
-    await provider.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: GENLAYER_CHAIN_ID_HEX }],
-    });
+    await switchGenLayerNetwork(provider);
   } catch (switchError) {
     if (getErrorCode(switchError) === 4001) throw switchError;
-    if (getErrorCode(switchError) !== 4902) throw switchError;
+    if (!isUnknownChainError(switchError)) throw switchError;
 
+    // 0xf22d / 61997 is not present in the wallet yet. Add the exact Studio
+    // Dev definition, then explicitly switch. Some wallets auto-switch after
+    // add while others register the network asynchronously, so verify and
+    // retry the switch once after a short delay when necessary.
     await addGenLayerNetwork(provider);
 
-    const afterAdd = await readWalletChainId(provider);
-    if (afterAdd !== GENLAYER_CHAIN_ID_DECIMAL) {
-      await provider.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: GENLAYER_CHAIN_ID_HEX }],
-      });
+    if ((await readWalletChainId(provider)) !== GENLAYER_CHAIN_ID_DECIMAL) {
+      try {
+        await switchGenLayerNetwork(provider);
+      } catch (firstSwitchAfterAdd) {
+        if (!isUnknownChainError(firstSwitchAfterAdd)) {
+          throw firstSwitchAfterAdd;
+        }
+        await delay(300);
+        await switchGenLayerNetwork(provider);
+      }
     }
   }
 
@@ -106,7 +136,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   async function connect() {
     setError("");
-    const injected = window.ethereum;
+    const injected = getInjectedProvider();
     if (!injected) {
       setError("Install MetaMask or another EIP-1193 browser wallet first.");
       return false;
@@ -125,7 +155,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const verifiedChain = await ensureGenLayerNetwork(injected);
 
       // Only mark the wallet authenticated after account access and network
-      // verification have both succeeded.
+      // verification have both succeeded. Proposal signing is therefore never
+      // enabled while the wallet is on another chain.
       setAddress(next);
       setChainId(verifiedChain);
       return true;
@@ -145,7 +176,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    const injected = window.ethereum;
+    const injected = getInjectedProvider();
     if (!injected) {
       setInitialized(true);
       return;
@@ -234,49 +265,78 @@ export function WalletButton() {
   );
 }
 
-function getErrorCode(cause: unknown): number | undefined {
-  if (typeof cause !== "object" || cause === null) return undefined;
+function delay(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
 
-  if ("code" in cause) {
-    const code = Number((cause as { code: unknown }).code);
+function errorObjects(cause: unknown): Record<string, unknown>[] {
+  const queue: unknown[] = [cause];
+  const seen = new Set<unknown>();
+  const results: Record<string, unknown>[] = [];
+
+  while (queue.length > 0) {
+    const item = queue.shift();
+    if (typeof item !== "object" || item === null || seen.has(item)) continue;
+    seen.add(item);
+
+    const object = item as Record<string, unknown>;
+    results.push(object);
+
+    for (const key of ["cause", "error", "data", "originalError"] as const) {
+      if (key in object) queue.push(object[key]);
+    }
+  }
+
+  return results;
+}
+
+function getErrorCode(cause: unknown): number | undefined {
+  for (const object of errorObjects(cause)) {
+    if (!("code" in object)) continue;
+    const code = Number(object.code);
     if (Number.isFinite(code)) return code;
   }
-
-  if ("cause" in cause) {
-    return getErrorCode((cause as { cause: unknown }).cause);
-  }
-
   return undefined;
 }
 
 function getErrorMessage(cause: unknown): string {
   if (cause instanceof Error && cause.message) return cause.message;
-  if (typeof cause !== "object" || cause === null) return "";
 
-  for (const key of ["shortMessage", "message", "details"] as const) {
-    if (key in cause) {
-      const value = (cause as Record<string, unknown>)[key];
+  for (const object of errorObjects(cause)) {
+    for (const key of ["shortMessage", "message", "details"] as const) {
+      const value = object[key];
       if (typeof value === "string" && value.trim()) return value;
     }
-  }
-
-  if ("cause" in cause) {
-    return getErrorMessage((cause as { cause: unknown }).cause);
   }
 
   return "";
 }
 
+function isUnknownChainError(cause: unknown): boolean {
+  if (getErrorCode(cause) === 4902) return true;
+
+  const message = getErrorMessage(cause).toLowerCase();
+  return (
+    message.includes("unrecognized chain id") ||
+    message.includes("unknown chain") ||
+    message.includes("chain has not been added") ||
+    message.includes("chain is not added")
+  );
+}
+
 function walletError(cause: unknown): string {
   const code = getErrorCode(cause);
   if (code === 4001) {
-    return "Wallet request cancelled. Approve account access and the GenLayer Studio Dev network switch to continue.";
+    return "Wallet request cancelled. Approve account access and the GenLayer Studio Dev network request to continue.";
   }
   if (code === -32002) {
     return "A wallet request is already open. Complete it in the wallet extension.";
   }
-  if (code === 4902) {
-    return "GenLayer Studio Dev is not configured in this wallet. Try Connect Wallet again to add the network.";
+  if (code === 4200 || code === -32601) {
+    return "This wallet does not support automatic custom-network setup. Add GenLayer Studio Dev manually with chain ID 61997 and try again.";
+  }
+  if (isUnknownChainError(cause)) {
+    return "The wallet still does not recognize GenLayer Studio Dev after the add-network request. Approve the network addition in the wallet, then try again.";
   }
 
   const message = getErrorMessage(cause);
