@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import type { TransactionHash } from "genlayer-js/types";
 import { Page, PanelTitle } from "../components/page-ui";
 import { useWallet } from "../components/wallet-button";
 import { isContractAddress, readClient } from "../../lib/genlayer";
@@ -105,8 +106,9 @@ export default function ProposalPage() {
 
       let childIds: string[] = [];
       try {
+        const transactionHash = genlayerTxId as TransactionHash;
         const triggered = await readClient.getTriggeredTransactionIds({
-          hash: genlayerTxId,
+          hash: transactionHash,
         });
         childIds = triggered.map(String);
       } catch {
