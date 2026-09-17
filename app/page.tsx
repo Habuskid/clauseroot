@@ -9,8 +9,8 @@ export default function LandingPage() {
         <Link className="brand" href="/">
           <Image
             className="brand-root-logo"
-            src="/root-logo.png"
-            alt="ClauseRoot root logo"
+            src="/clauseroot-logo.svg"
+            alt="ClauseRoot logo"
             width={34}
             height={34}
             priority
