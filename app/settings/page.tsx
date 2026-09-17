@@ -1,5 +1,7 @@
 import { Page, PanelTitle } from "../components/page-ui";
 import {
+  CLAUSEROOT_GOVERNOR,
+  CLAUSEROOT_TARGET,
   GENLAYER_CHAIN_ID_DECIMAL,
   GENLAYER_EXPLORER_URL,
   GENLAYER_NETWORK_LABEL,
@@ -11,7 +13,7 @@ export default function SettingsPage() {
     <Page
       title="Settings"
       kicker="DEPLOYMENT / NETWORK"
-      intro="Inspect the Studio Next network used by the console. Wallet signing remains in the browser; no private key is stored or proxied."
+      intro="Inspect the Studio Next network and the verified ClauseRoot deployment used by this console. Wallet signing remains in the browser; no private key is stored or proxied."
     >
       <section className="panel">
         <PanelTitle
@@ -43,14 +45,23 @@ export default function SettingsPage() {
       <section className="panel">
         <PanelTitle
           label="CONTRACTS"
-          title="Deployment addresses"
-          note="PUBLIC VALUES ONLY"
+          title="Verified deployment"
+          note="PUBLIC ON-CHAIN VALUES"
         />
+        <div className="settings-list">
+          <div>
+            <span>ClauseRoot Governor</span>
+            <code>{CLAUSEROOT_GOVERNOR}</code>
+          </div>
+          <div>
+            <span>Governed target</span>
+            <code>{CLAUSEROOT_TARGET}</code>
+          </div>
+        </div>
         <p className="muted">
-          Use a real Studio Next Governor address on Proposal and Activity, and
-          the matching Governor/target pair on Overview. Every value is read
-          from chain; no deployment address or signing secret is embedded in
-          the client bundle.
+          These public addresses are the canonical Agent Tank demo deployment.
+          The dashboard and activity views still read authoritative state from
+          Studio Next; the client does not store validator verdicts locally.
         </p>
       </section>
     </Page>
