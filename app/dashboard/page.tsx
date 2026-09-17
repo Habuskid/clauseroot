@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  CLAUSEROOT_GOVERNOR,
+  CLAUSEROOT_TARGET,
   isContractAddress,
   readGovernorState,
   readTargetState,
@@ -11,8 +13,8 @@ import {
 import { Page, PanelTitle } from "../components/page-ui";
 
 export default function Overview() {
-  const [governor, setGovernor] = useState("");
-  const [target, setTarget] = useState("");
+  const [governor, setGovernor] = useState(CLAUSEROOT_GOVERNOR);
+  const [target, setTarget] = useState(CLAUSEROOT_TARGET);
   const [state, setState] = useState<{
     value: string;
     version: string;
@@ -20,6 +22,7 @@ export default function Overview() {
     governanceFinalized: boolean;
   } | null>(null);
   const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function loadState() {
     setNotice("");
@@ -30,6 +33,7 @@ export default function Overview() {
       return;
     }
 
+    setLoading(true);
     try {
       const linked = await readGovernorState(governor as `0x${string}`);
       if (linked.target.toLowerCase() !== target.toLowerCase()) {
@@ -43,44 +47,55 @@ export default function Overview() {
       setNotice(
         cause instanceof Error ? cause.message : "Could not read this deployment.",
       );
+    } finally {
+      setLoading(false);
     }
   }
+
+  useEffect(() => {
+    void loadState();
+    // Load the canonical Studio Next deployment once on entry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Page
       title="Overview"
       kicker="GOVERNED PROTOCOL / CONTROL PLANE"
-      intro="Read the live protocol state, verify the Governor link, and see whether governance has been finalized."
+      intro="Read the live ClauseRoot deployment, verify the Governor link, and inspect the protocol state validators actually govern."
     >
       <section className="hero-row">
         <div>
           <p className="eyebrow">GENLAYER STUDIO NEXT</p>
           <h1>Protocol overview</h1>
           <p className="lede">
-            ClauseRoot makes the upgrade authority and constitutional state
+            ClauseRoot makes upgrade authority and constitutional state
             inspectable before any proposal is signed.
           </p>
         </div>
         <div className="version-block">
           <span>ACTIVE VERSION</span>
-          <strong>{state?.version ?? "—"}</strong>
+          <strong>{state?.version ?? (loading ? "…" : "—")}</strong>
           <small>
             {state
               ? `${Number(state.feeBps) / 100}% fee · stored value: ${state.value}`
-              : "connect a deployment below"}
+              : loading
+                ? "reading Studio Next"
+                : "live deployment unavailable"}
           </small>
         </div>
       </section>
 
       <section className="panel deployment-panel">
         <PanelTitle
-          label="DEPLOYMENT"
-          title="Connect a live pair"
-          note="READS ONLY"
+          label="LIVE DEPLOYMENT"
+          title="Canonical Studio Next pair"
+          note="READS ON-CHAIN"
         />
         <p className="muted">
-          Use real Governor and target addresses deployed on Studio Next. The
-          Governor link is checked against the target on-chain.
+          The production Governor and governed target are preloaded. You can
+          replace either address to inspect another deployment; ClauseRoot still
+          verifies the Governor-to-target link on-chain.
         </p>
         <div className="field-row">
           <label>
@@ -99,8 +114,8 @@ export default function Overview() {
               placeholder="0x…"
             />
           </label>
-          <button className="outline-button" onClick={loadState}>
-            Load live state ↗
+          <button className="outline-button" onClick={loadState} disabled={loading}>
+            {loading ? "READING…" : "Refresh live state ↗"}
           </button>
         </div>
         {notice && <p className="notice">{notice}</p>}
@@ -127,7 +142,7 @@ export default function Overview() {
                   <p>{copy}</p>
                 </div>
                 <span className="clause-state">
-                  {state ? "READY TO EVALUATE" : "NOT EVALUATED"}
+                  {state ? "ACTIVE RULE" : "NOT LOADED"}
                 </span>
               </div>
             ))}
@@ -139,7 +154,7 @@ export default function Overview() {
           <div className="status-stack">
             <Status
               label="Governor / target link"
-              value={state ? "VERIFIED" : "NOT CONNECTED"}
+              value={state ? "VERIFIED" : loading ? "READING" : "NOT VERIFIED"}
             />
             <Status
               label="Bootstrap authority"
@@ -158,12 +173,12 @@ export default function Overview() {
             />
             <Status
               label="Target storage"
-              value={state ? "READABLE" : "—"}
+              value={state ? state.value : "—"}
             />
           </div>
           <div className="next-step">
             <span>NEXT STEP</span>
-            <Link href="/proposal">Prepare a proposal ↗</Link>
+            <Link href="/activity">Inspect proposal evidence ↗</Link>
           </div>
         </section>
       </div>
