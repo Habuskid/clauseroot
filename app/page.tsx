@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { LandingAction } from "./components/landing-action";
 
@@ -6,7 +7,14 @@ export default function LandingPage() {
     <main className="landing">
       <nav className="landing-nav">
         <Link className="brand" href="/">
-          <span className="mark">CR</span>
+          <Image
+            className="brand-root-logo"
+            src="/root-logo.png"
+            alt="ClauseRoot root logo"
+            width={34}
+            height={34}
+            priority
+          />
           <span>ClauseRoot</span>
         </Link>
         <span>CONSTITUTIONAL UPGRADE CONTROL</span>
